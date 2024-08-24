@@ -17,6 +17,13 @@ use nom::{
     IResult,
 };
 
+#[derive(Clone, Debug)]
+pub enum Value {
+    Bool(bool),
+    Float(f32),
+    Int(i64),
+}
+
 #[derive(Debug)]
 enum Expr {
     Bool(bool),
@@ -124,13 +131,6 @@ fn parse(s: &str) -> Result<Ast, FigError> {
         return Err(format!("trailing input: `{rest}`").into());
     }
     Ok(tree)
-}
-
-#[derive(Clone, Debug)]
-pub enum Value {
-    Bool(bool),
-    Float(f32),
-    Int(i64),
 }
 
 #[derive(Debug)]

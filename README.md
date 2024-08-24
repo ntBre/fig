@@ -9,9 +9,9 @@ Fig currently supports the following expression types:
 | Bool   | `true`, `false`       |
 | Number | `123`, `45.6`, `7e8`  |
 | Ident  | `x`, `x2`, `an_ident` |
-| Str    | "Hello, world"        |
-| List   | [1, 2, 3]             |
-| Map    | {x: 1, y: 2}          |
+| Str    | `"Hello, world"`      |
+| List   | `[1, 2, 3]`           |
+| Map    | `{x: 1, y: 2}`        |
 
 with a limited form of evaluation that just looks up `Ident` expressions in the
 global environment. Watch out for spaces! `[ 1, 2, 3]` is currently invalid, for

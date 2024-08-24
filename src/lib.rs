@@ -173,12 +173,27 @@ fn program(s: &str) -> IResult<&str, Ast> {
 #[derive(Debug)]
 pub struct Ast(Vec<Stmt>);
 
-type FigError<'a> = Box<dyn Error + 'a>;
+#[derive(Debug)]
+pub enum FigError {
+    NomIncomplete,
+    NomError(nom::error::ErrorKind),
+    TrailingInput(String),
+}
+
+impl From<nom::Err<nom::error::Error<&str>>> for FigError {
+    fn from(value: nom::Err<nom::error::Error<&str>>) -> Self {
+        match value {
+            nom::Err::Incomplete(_) => Self::NomIncomplete,
+            nom::Err::Error(e) => Self::NomError(e.code),
+            nom::Err::Failure(e) => Self::NomError(e.code),
+        }
+    }
+}
 
 fn parse(s: &str) -> Result<Ast, FigError> {
     let (rest, tree) = program(s)?;
     if !rest.is_empty() {
-        return Err(format!("trailing input: `{rest}`").into());
+        return Err(FigError::TrailingInput(rest.to_owned()));
     }
     Ok(tree)
 }
@@ -189,11 +204,11 @@ pub struct Fig {
 }
 
 impl Fig {
-    pub fn new() -> Self {
+    fn new() -> Self {
         Self { variables: HashMap::new() }
     }
 
-    pub fn eval(&mut self, ast: Ast) -> Result<(), FigError> {
+    fn eval(&mut self, ast: Ast) -> Result<(), FigError> {
         for stmt in ast.0 {
             match stmt {
                 Stmt::Assign((id, expr)) => {
@@ -203,6 +218,13 @@ impl Fig {
             }
         }
         Ok(())
+    }
+
+    pub fn parse(s: &str) -> Result<Self, FigError> {
+        let mut ret = Self::new();
+        let ast = parse(s)?;
+        ret.eval(ast)?;
+        Ok(ret)
     }
 }
 
@@ -227,7 +249,5 @@ mod tests {
 
         let mut fig = Fig::new();
         fig.eval(ast).unwrap();
-
-        dbg!(fig);
     }
 }

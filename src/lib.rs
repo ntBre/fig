@@ -25,6 +25,7 @@ pub enum Value {
     Number(f32),
     Str(String),
     List(Vec<Value>),
+    Map(HashMap<String, Value>),
 }
 
 #[derive(Debug)]
@@ -34,6 +35,7 @@ enum Expr {
     Ident(String),
     Str(String),
     List(Vec<Expr>),
+    Map(HashMap<String, Expr>),
 }
 
 impl Expr {
@@ -51,6 +53,9 @@ impl Expr {
             Expr::List(l) => {
                 Value::List(l.into_iter().map(|e| e.eval(env)).collect())
             }
+            Expr::Map(m) => Value::Map(
+                m.into_iter().map(|(k, v)| (k, v.eval(env))).collect(),
+            ),
         }
     }
 
@@ -87,9 +92,33 @@ fn list(s: &str) -> IResult<&str, Expr> {
     .map(|(r, v)| (r, Expr::List(v)))
 }
 
-/// expr := float | int | bool | string | ident | list
+fn map(s: &str) -> IResult<&str, Expr> {
+    delimited(
+        char('{'),
+        separated_list0(
+            (tag(","), opt(multispace0)),
+            (ident, (tag(":"), opt(multispace0)), expr),
+        ),
+        char('}'),
+    )
+    .parse(s)
+    .map(|(r, v)| {
+        (
+            r,
+            Expr::Map(
+                v.into_iter()
+                    .map(|(id, _colon, expr)| {
+                        (id.try_into_ident().unwrap(), expr)
+                    })
+                    .collect(),
+            ),
+        )
+    })
+}
+
+/// expr := float | int | bool | string | ident | list | map
 fn expr(s: &str) -> IResult<&str, Expr> {
-    alt((number, bool, string, ident, list)).parse(s)
+    alt((number, bool, string, ident, list, map)).parse(s)
 }
 
 /// ident := [A-Za-z][A-Za-z_0-9]*
@@ -180,6 +209,11 @@ impl Fig {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn debug_map() {
+        map("{x: 1, y: 2, z: 3}").unwrap();
+    }
 
     #[test]
     fn debug_list() {

@@ -6,3 +6,4 @@ let float = 3.14;
 let s = "this is a string";
 
 let list = [1, 2, 3];
+let tags = ["1", "2", "3"];

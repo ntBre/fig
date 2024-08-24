@@ -8,17 +8,19 @@ use nom::{
     branch::alt,
     bytes::complete::tag,
     character::complete::{
-        alpha1, alphanumeric1, digit1, multispace0, space0, space1,
+        alpha1, alphanumeric1, char, digit1, multispace0, one_of, space0,
+        space1,
     },
-    combinator::recognize,
-    multi::{many0, many0_count},
-    sequence::{delimited, pair, tuple},
+    combinator::{opt, recognize},
+    multi::{many0, many0_count, many1},
+    sequence::{delimited, pair, preceded, terminated, tuple},
     IResult,
 };
 
 #[derive(Debug)]
 enum Expr {
     Bool(bool),
+    Float(f32),
     Int(i64),
     Ident(String),
 }
@@ -34,6 +36,7 @@ impl Expr {
                 };
                 v.clone()
             }
+            Expr::Float(f) => Value::Float(f),
         }
     }
 
@@ -51,13 +54,17 @@ fn bool(s: &str) -> IResult<&str, Expr> {
         .map(|(s, v)| (s, Expr::Bool(v.parse().unwrap())))
 }
 
+fn float(s: &str) -> IResult<&str, Expr> {
+    nom::number::complete::float(s).map(|(s, f)| (s, Expr::Float(f)))
+}
+
 fn int(s: &str) -> IResult<&str, Expr> {
     digit1(s).map(|(s, v)| (s, Expr::Int(v.parse().unwrap())))
 }
 
 /// expr := int | ident
 fn expr(s: &str) -> IResult<&str, Expr> {
-    alt((int, bool, ident))(s)
+    alt((float, int, bool, ident))(s)
 }
 
 /// ident := [A-Za-z][A-Za-z_0-9]*
@@ -121,8 +128,9 @@ fn parse(s: &str) -> Result<Ast, FigError> {
 
 #[derive(Clone, Debug)]
 pub enum Value {
-    Int(i64),
     Bool(bool),
+    Float(f32),
+    Int(i64),
 }
 
 #[derive(Debug)]

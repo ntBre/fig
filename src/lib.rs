@@ -79,9 +79,9 @@ fn string(s: &str) -> IResult<&str, Expr> {
     string::string(s).map(|(s, v)| (s, Expr::Str(v)))
 }
 
-/// expr := int | ident
+/// expr := float | int | bool | string | ident
 fn expr(s: &str) -> IResult<&str, Expr> {
-    alt((float, int, bool, ident, string)).parse(s)
+    alt((float, int, bool, string, ident)).parse(s)
 }
 
 /// ident := [A-Za-z][A-Za-z_0-9]*

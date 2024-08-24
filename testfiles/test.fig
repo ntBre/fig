@@ -1,2 +1,4 @@
 let XK_d = 100;
 let v2 = XK_d;
+let this_works = false;
+let this_does = true;

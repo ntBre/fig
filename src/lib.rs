@@ -16,12 +16,9 @@ use nom::{
     IResult,
 };
 
-fn int(s: &str) -> IResult<&str, Expr> {
-    digit1(s).map(|(s, v)| (s, Expr::Int(v.parse().unwrap())))
-}
-
 #[derive(Debug)]
 enum Expr {
+    Bool(bool),
     Int(i64),
     Ident(String),
 }
@@ -29,6 +26,7 @@ enum Expr {
 impl Expr {
     fn eval(self, env: &HashMap<String, Value>) -> Value {
         match self {
+            Expr::Bool(b) => Value::Bool(b),
             Expr::Int(i) => Value::Int(i),
             Expr::Ident(id) => {
                 let Some(v) = env.get(&id) else {
@@ -48,9 +46,18 @@ impl Expr {
     }
 }
 
+fn bool(s: &str) -> IResult<&str, Expr> {
+    alt((tag("true"), tag("false")))(s)
+        .map(|(s, v)| (s, Expr::Bool(v.parse().unwrap())))
+}
+
+fn int(s: &str) -> IResult<&str, Expr> {
+    digit1(s).map(|(s, v)| (s, Expr::Int(v.parse().unwrap())))
+}
+
 /// expr := int | ident
 fn expr(s: &str) -> IResult<&str, Expr> {
-    alt((int, ident))(s)
+    alt((int, bool, ident))(s)
 }
 
 /// ident := [A-Za-z][A-Za-z_0-9]*
@@ -115,6 +122,7 @@ fn parse(s: &str) -> Result<Ast, FigError> {
 #[derive(Clone, Debug)]
 pub enum Value {
     Int(i64),
+    Bool(bool),
 }
 
 #[derive(Debug)]

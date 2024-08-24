@@ -222,6 +222,14 @@ pub enum FigError {
     TrailingInput(String),
 }
 
+impl std::fmt::Display for FigError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self:?}")
+    }
+}
+
+impl Error for FigError {}
+
 impl From<nom::Err<nom::error::Error<&str>>> for FigError {
     fn from(value: nom::Err<nom::error::Error<&str>>) -> Self {
         match value {

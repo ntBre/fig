@@ -233,13 +233,17 @@ mod tests {
     use super::*;
 
     #[test]
-    fn debug_map() {
-        map("{x: 1, y: 2, z: 3}").unwrap();
+    fn maps() {
+        for m in ["{x: 1, y: 2, z: 3}"] {
+            map(m).unwrap();
+        }
     }
 
     #[test]
-    fn debug_list() {
-        list("[1, 2, 3]").unwrap();
+    fn lists() {
+        for t in ["[1, 2, 3]", "[1,2,3]"] {
+            list(t).unwrap();
+        }
     }
 
     #[test]

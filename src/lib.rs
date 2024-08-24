@@ -7,28 +7,59 @@ use std::{collections::HashMap, error::Error, fs::read_to_string, hash::Hash};
 use nom::{
     branch::alt,
     bytes::complete::tag,
-    character::complete::{alpha1, alphanumeric1, digit1, space0, space1},
+    character::complete::{
+        alpha1, alphanumeric1, digit1, multispace0, space0, space1,
+    },
     combinator::recognize,
     multi::{many0, many0_count},
-    sequence::{pair, tuple},
+    sequence::{delimited, pair, tuple},
     IResult,
 };
 
-fn int(s: &str) -> IResult<&str, &str> {
-    digit1(s)
+fn int(s: &str) -> IResult<&str, Expr> {
+    digit1(s).map(|(s, v)| (s, Expr::Int(v.parse().unwrap())))
 }
 
-/// expr := int
-fn expr(s: &str) -> IResult<&str, &str> {
-    alt((int,))(s)
+#[derive(Debug)]
+enum Expr {
+    Int(i64),
+    Ident(String),
+}
+
+impl Expr {
+    fn eval(self, env: &HashMap<String, Value>) -> Value {
+        match self {
+            Expr::Int(i) => Value::Int(i),
+            Expr::Ident(id) => {
+                let Some(v) = env.get(&id) else {
+                    panic!("unknown identifier {id}");
+                };
+                v.clone()
+            }
+        }
+    }
+
+    fn try_into_ident(self) -> Result<String, Self> {
+        if let Self::Ident(v) = self {
+            Ok(v)
+        } else {
+            Err(self)
+        }
+    }
+}
+
+/// expr := int | ident
+fn expr(s: &str) -> IResult<&str, Expr> {
+    alt((int, ident))(s)
 }
 
 /// ident := [A-Za-z][A-Za-z_0-9]*
-fn ident(s: &str) -> IResult<&str, &str> {
+fn ident(s: &str) -> IResult<&str, Expr> {
     recognize(pair(
         alt((alpha1, tag("_"))),
         many0_count(alt((alphanumeric1, tag("_")))),
     ))(s)
+    .map(|(s, id)| (s, Expr::Ident(id.to_string())))
 }
 
 /// assign := "let" ident "=" expr ";"
@@ -45,13 +76,16 @@ fn assign(s: &str) -> IResult<&str, Stmt> {
         tag(";"),
     ))(s)
     .map(|(s, (_let, _, ident, _, _eq, _, expr, _, _sc))| {
-        (s, Stmt::Assign((ident, expr)))
+        (
+            s,
+            Stmt::Assign((ident.try_into_ident().unwrap().clone(), expr)),
+        )
     })
 }
 
 #[derive(Debug)]
-enum Stmt<'a> {
-    Assign((&'a str, &'a str)),
+enum Stmt {
+    Assign((String, Expr)),
 }
 
 /// stmt := assign
@@ -61,25 +95,31 @@ fn stmt(s: &str) -> IResult<&str, Stmt> {
 
 /// program := stmt*
 fn program(s: &str) -> IResult<&str, Ast> {
-    many0(stmt)(s).map(|(s, t)| (s, Ast(t)))
+    many0(delimited(multispace0, stmt, multispace0))(s)
+        .map(|(s, t)| (s, Ast(t)))
 }
 
 #[derive(Debug)]
-pub struct Ast<'a>(Vec<Stmt<'a>>);
+pub struct Ast(Vec<Stmt>);
 
 type FigError<'a> = Box<dyn Error + 'a>;
 
 fn parse(s: &str) -> Result<Ast, FigError> {
     let (rest, tree) = program(s)?;
     if !rest.is_empty() {
-        return Err(format!("trailing input: {rest}").into());
+        return Err(format!("trailing input: `{rest}`").into());
     }
     Ok(tree)
 }
 
+#[derive(Clone, Debug)]
+pub enum Value {
+    Int(i64),
+}
+
 #[derive(Debug)]
 pub struct Fig {
-    variables: HashMap<String, String>,
+    variables: HashMap<String, Value>,
 }
 
 impl Fig {
@@ -90,8 +130,9 @@ impl Fig {
     pub fn eval(&mut self, ast: Ast) -> Result<(), FigError> {
         for stmt in ast.0 {
             match stmt {
-                Stmt::Assign((id, val)) => {
-                    self.variables.insert(id.to_owned(), val.to_owned());
+                Stmt::Assign((id, expr)) => {
+                    let val = expr.eval(&self.variables);
+                    self.variables.insert(id.to_owned(), val);
                 }
             }
         }

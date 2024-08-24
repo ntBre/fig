@@ -13,15 +13,18 @@ use nom::{
     },
     combinator::{opt, recognize},
     multi::{many0, many0_count, many1},
-    sequence::{delimited, pair, preceded, terminated, tuple},
-    IResult,
+    sequence::{delimited, pair, preceded, terminated},
+    IResult, Parser,
 };
+
+mod string;
 
 #[derive(Clone, Debug)]
 pub enum Value {
     Bool(bool),
     Float(f32),
     Int(i64),
+    Str(String),
 }
 
 #[derive(Debug)]
@@ -30,6 +33,7 @@ enum Expr {
     Float(f32),
     Int(i64),
     Ident(String),
+    Str(String),
 }
 
 impl Expr {
@@ -44,6 +48,7 @@ impl Expr {
                 v.clone()
             }
             Expr::Float(f) => Value::Float(f),
+            Expr::Str(s) => Value::Str(s),
         }
     }
 
@@ -57,7 +62,8 @@ impl Expr {
 }
 
 fn bool(s: &str) -> IResult<&str, Expr> {
-    alt((tag("true"), tag("false")))(s)
+    alt((tag("true"), tag("false")))
+        .parse(s)
         .map(|(s, v)| (s, Expr::Bool(v.parse().unwrap())))
 }
 
@@ -69,9 +75,13 @@ fn int(s: &str) -> IResult<&str, Expr> {
     digit1(s).map(|(s, v)| (s, Expr::Int(v.parse().unwrap())))
 }
 
+fn string(s: &str) -> IResult<&str, Expr> {
+    string::string(s).map(|(s, v)| (s, Expr::Str(v)))
+}
+
 /// expr := int | ident
 fn expr(s: &str) -> IResult<&str, Expr> {
-    alt((float, int, bool, ident))(s)
+    alt((float, int, bool, ident, string)).parse(s)
 }
 
 /// ident := [A-Za-z][A-Za-z_0-9]*
@@ -79,13 +89,14 @@ fn ident(s: &str) -> IResult<&str, Expr> {
     recognize(pair(
         alt((alpha1, tag("_"))),
         many0_count(alt((alphanumeric1, tag("_")))),
-    ))(s)
+    ))
+    .parse(s)
     .map(|(s, id)| (s, Expr::Ident(id.to_string())))
 }
 
 /// assign := "let" ident "=" expr ";"
 fn assign(s: &str) -> IResult<&str, Stmt> {
-    tuple((
+    (
         tag("let"),
         space1,
         ident,
@@ -95,13 +106,14 @@ fn assign(s: &str) -> IResult<&str, Stmt> {
         expr,
         space0,
         tag(";"),
-    ))(s)
-    .map(|(s, (_let, _, ident, _, _eq, _, expr, _, _sc))| {
-        (
-            s,
-            Stmt::Assign((ident.try_into_ident().unwrap().clone(), expr)),
-        )
-    })
+    )
+        .parse(s)
+        .map(|(s, (_let, _, ident, _, _eq, _, expr, _, _sc))| {
+            (
+                s,
+                Stmt::Assign((ident.try_into_ident().unwrap().clone(), expr)),
+            )
+        })
 }
 
 #[derive(Debug)]
@@ -111,12 +123,13 @@ enum Stmt {
 
 /// stmt := assign
 fn stmt(s: &str) -> IResult<&str, Stmt> {
-    alt((assign,))(s)
+    alt((assign,)).parse(s)
 }
 
 /// program := stmt*
 fn program(s: &str) -> IResult<&str, Ast> {
-    many0(delimited(multispace0, stmt, multispace0))(s)
+    many0(delimited(multispace0, stmt, multispace0))
+        .parse(s)
         .map(|(s, t)| (s, Ast(t)))
 }
 

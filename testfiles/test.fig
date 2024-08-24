@@ -3,3 +3,4 @@ let v2 = XK_d;
 let this_works = false;
 let this_does = true;
 let float = 3.14;
+let s = "this is a string";

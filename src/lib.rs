@@ -68,6 +68,46 @@ impl Value {
             None
         }
     }
+
+    pub fn try_into_bool(self) -> Result<bool, Self> {
+        if let Self::Bool(v) = self {
+            Ok(v)
+        } else {
+            Err(self)
+        }
+    }
+
+    pub fn try_into_number(self) -> Result<f32, Self> {
+        if let Self::Number(v) = self {
+            Ok(v)
+        } else {
+            Err(self)
+        }
+    }
+
+    pub fn try_into_str(self) -> Result<String, Self> {
+        if let Self::Str(v) = self {
+            Ok(v)
+        } else {
+            Err(self)
+        }
+    }
+
+    pub fn try_into_list(self) -> Result<Vec<Value>, Self> {
+        if let Self::List(v) = self {
+            Ok(v)
+        } else {
+            Err(self)
+        }
+    }
+
+    pub fn try_into_map(self) -> Result<HashMap<String, Value>, Self> {
+        if let Self::Map(v) = self {
+            Ok(v)
+        } else {
+            Err(self)
+        }
+    }
 }
 
 #[derive(Debug)]

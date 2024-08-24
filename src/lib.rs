@@ -1,4 +1,4 @@
-//! A stringly-typed configuration language
+//! A simple configuration language
 
 #![allow(unused)]
 

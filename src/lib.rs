@@ -12,7 +12,7 @@ use nom::{
         space1,
     },
     combinator::{opt, recognize},
-    multi::{many0, many0_count, many1},
+    multi::{many0, many0_count, many1, separated_list0},
     sequence::{delimited, pair, preceded, terminated},
     IResult, Parser,
 };
@@ -22,33 +22,35 @@ mod string;
 #[derive(Clone, Debug)]
 pub enum Value {
     Bool(bool),
-    Float(f32),
-    Int(i64),
+    Number(f32),
     Str(String),
+    List(Vec<Value>),
 }
 
 #[derive(Debug)]
 enum Expr {
     Bool(bool),
-    Float(f32),
-    Int(i64),
+    Number(f32),
     Ident(String),
     Str(String),
+    List(Vec<Expr>),
 }
 
 impl Expr {
     fn eval(self, env: &HashMap<String, Value>) -> Value {
         match self {
             Expr::Bool(b) => Value::Bool(b),
-            Expr::Int(i) => Value::Int(i),
             Expr::Ident(id) => {
                 let Some(v) = env.get(&id) else {
                     panic!("unknown identifier {id}");
                 };
                 v.clone()
             }
-            Expr::Float(f) => Value::Float(f),
+            Expr::Number(f) => Value::Number(f),
             Expr::Str(s) => Value::Str(s),
+            Expr::List(l) => {
+                Value::List(l.into_iter().map(|e| e.eval(env)).collect())
+            }
         }
     }
 
@@ -67,21 +69,27 @@ fn bool(s: &str) -> IResult<&str, Expr> {
         .map(|(s, v)| (s, Expr::Bool(v.parse().unwrap())))
 }
 
-fn float(s: &str) -> IResult<&str, Expr> {
-    nom::number::complete::float(s).map(|(s, f)| (s, Expr::Float(f)))
-}
-
-fn int(s: &str) -> IResult<&str, Expr> {
-    digit1(s).map(|(s, v)| (s, Expr::Int(v.parse().unwrap())))
+fn number(s: &str) -> IResult<&str, Expr> {
+    nom::number::complete::float(s).map(|(s, f)| (s, Expr::Number(f)))
 }
 
 fn string(s: &str) -> IResult<&str, Expr> {
     string::string(s).map(|(s, v)| (s, Expr::Str(v)))
 }
 
-/// expr := float | int | bool | string | ident
+fn list(s: &str) -> IResult<&str, Expr> {
+    delimited(
+        char('['),
+        separated_list0((tag(","), opt(multispace0)), expr),
+        char(']'),
+    )
+    .parse(s)
+    .map(|(r, v)| (r, Expr::List(v)))
+}
+
+/// expr := float | int | bool | string | ident | list
 fn expr(s: &str) -> IResult<&str, Expr> {
-    alt((float, int, bool, string, ident)).parse(s)
+    alt((number, bool, string, ident, list)).parse(s)
 }
 
 /// ident := [A-Za-z][A-Za-z_0-9]*
@@ -172,6 +180,11 @@ impl Fig {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn debug_list() {
+        list("[1, 2, 3]").unwrap();
+    }
 
     #[test]
     fn main() {

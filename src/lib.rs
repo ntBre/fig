@@ -28,6 +28,48 @@ pub enum Value {
     Map(HashMap<String, Value>),
 }
 
+impl Value {
+    pub fn as_bool(&self) -> Option<&bool> {
+        if let Self::Bool(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_number(&self) -> Option<&f32> {
+        if let Self::Number(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_str(&self) -> Option<&String> {
+        if let Self::Str(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_list(&self) -> Option<&Vec<Value>> {
+        if let Self::List(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_map(&self) -> Option<&HashMap<String, Value>> {
+        if let Self::Map(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
+}
+
 #[derive(Debug)]
 enum Expr {
     Bool(bool),
@@ -200,7 +242,7 @@ fn parse(s: &str) -> Result<Ast, FigError> {
 
 #[derive(Debug)]
 pub struct Fig {
-    variables: HashMap<String, Value>,
+    pub variables: HashMap<String, Value>,
 }
 
 impl Fig {

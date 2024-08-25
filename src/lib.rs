@@ -222,11 +222,17 @@ fn string(s: &str) -> IResult<&str, Expr> {
     string::string(s).map(|(s, v)| (s, Expr::Str(v)))
 }
 
+/// This one is a little more complicated than I thought to handle whitespace. I
+/// guess it's basically like a Rust macro with $(,)* since there's an
+/// additional optional , and whitespace between the final expr and the closing
+/// right bracket.
+///
+/// list := "[" \s* (expr,\s*)* ","? \s* "]"
 fn list(s: &str) -> IResult<&str, Expr> {
     delimited(
-        char('['),
-        separated_list0((tag(","), opt(multispace0)), expr),
-        char(']'),
+        (char('['), multispace0),
+        separated_list0((tag(","), multispace0), expr),
+        (opt(recognize(char(','))), multispace0, char(']')),
     )
     .parse(s)
     .map(|(r, v)| (r, Expr::List(v)))
@@ -418,7 +424,7 @@ mod tests {
 
     #[test]
     fn lists() {
-        for t in ["[1, 2, 3]", "[1,2,3]"] {
+        for t in ["[1, 2, 3]", "[1,2,3]", "[\n1,\n2,\n3,\n]"] {
             list(t).unwrap();
         }
     }

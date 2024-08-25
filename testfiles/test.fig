@@ -15,3 +15,9 @@ let struct = {x: 1, b: false, s: "str"};
 let MODKEY = 64;
 let ShiftMask = 1;
 let key = MODKEY | ShiftMask;
+
+let multiline_list = [
+	1,
+	2,
+	3,
+];

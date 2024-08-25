@@ -388,7 +388,7 @@ pub struct Fig {
 }
 
 impl Fig {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self { variables: HashMap::new() }
     }
 
@@ -405,11 +405,10 @@ impl Fig {
         Ok(())
     }
 
-    pub fn parse(s: &str) -> Result<Self, FigError> {
-        let mut ret = Self::new();
+    pub fn parse(&mut self, s: &str) -> Result<(), FigError> {
         let ast = parse(s)?;
-        ret.eval(ast)?;
-        Ok(ret)
+        self.eval(ast)?;
+        Ok(())
     }
 }
 

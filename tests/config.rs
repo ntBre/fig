@@ -20,7 +20,8 @@ fn main() {
         let x = 1;
         let y = 2;
     ";
-    let f = Fig::parse(s).unwrap();
+    let mut f = Fig::new();
+    f.parse(s).unwrap();
     let conf = Config::from(f);
     let (_x, _y) = (conf.x, conf.y);
 }

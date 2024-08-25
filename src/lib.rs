@@ -251,7 +251,7 @@ fn string(s: &str) -> IResult<&str, Expr> {
 fn list(s: &str) -> IResult<&str, Expr> {
     delimited(
         (char('['), multispace0),
-        separated_list0((tag(","), multispace0), expr),
+        separated_list0((tag(","), multispace0), genexpr),
         (opt(recognize(char(','))), multispace0, char(']')),
     )
     .parse(s)
@@ -263,7 +263,7 @@ fn map(s: &str) -> IResult<&str, Expr> {
         char('{'),
         separated_list0(
             (tag(","), opt(multispace0)),
-            (ident, (tag(":"), opt(multispace0)), expr),
+            (ident, (tag(":"), opt(multispace0)), genexpr),
         ),
         char('}'),
     )
@@ -338,6 +338,10 @@ fn ident(s: &str) -> IResult<&str, Expr> {
     .map(|(s, id)| (s, Expr::Ident(id.to_string())))
 }
 
+fn genexpr(s: &str) -> IResult<&str, Expr> {
+    alt((unexpr, binexpr, expr)).parse(s)
+}
+
 /// assign := "let" ident "=" expr ";"
 fn assign(s: &str) -> IResult<&str, Stmt> {
     (
@@ -347,7 +351,7 @@ fn assign(s: &str) -> IResult<&str, Stmt> {
         space0,
         tag("="),
         space0,
-        alt((unexpr, binexpr, expr)),
+        genexpr,
         space0,
         tag(";"),
     )

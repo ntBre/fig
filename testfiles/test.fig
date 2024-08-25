@@ -20,6 +20,8 @@ let x = 1 << 3;
 let y = !0;
 let z = -1;
 
+let unmap = {ui: !0};
+
 let multiline_list = [
 	1,
 	2,

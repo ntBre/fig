@@ -16,6 +16,8 @@ let MODKEY = 64;
 let ShiftMask = 1;
 let key = MODKEY | ShiftMask;
 
+let x = 1 << 3;
+
 let multiline_list = [
 	1,
 	2,

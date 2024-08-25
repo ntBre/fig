@@ -186,6 +186,14 @@ impl Expr {
                             *v1.as_int().unwrap() | *v2.as_int().unwrap(),
                         )
                     }
+                    BinOp::BitLeft => {
+                        if !v1.is_int() || !v2.is_int() {
+                            panic!("invalid binary operator | for non-int");
+                        }
+                        Value::Int(
+                            *v1.as_int().unwrap() << *v2.as_int().unwrap(),
+                        )
+                    }
                 }
             }
         }
@@ -265,10 +273,13 @@ fn map(s: &str) -> IResult<&str, Expr> {
 #[derive(Debug)]
 enum BinOp {
     BitOr,
+    BitLeft,
 }
 
 fn binop(s: &str) -> IResult<&str, BinOp> {
-    tag("|").parse(s).map(|(r, s)| (r, BinOp::BitOr))
+    alt((tag("<<"), tag("|")))
+        .parse(s)
+        .map(|(r, s)| (r, BinOp::BitOr))
 }
 
 /// binexpr := expr binop expr

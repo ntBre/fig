@@ -21,3 +21,6 @@ let multiline_list = [
 	2,
 	3,
 ];
+
+# this is a comment
+let c = "another one"; # in-line comments work too, after semi-colon

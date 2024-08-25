@@ -6,12 +6,12 @@ use std::{collections::HashMap, error::Error, fs::read_to_string, hash::Hash};
 
 use nom::{
     branch::alt,
-    bytes::complete::tag,
+    bytes::complete::{is_not, tag},
     character::complete::{
         alpha1, alphanumeric1, char, digit1, multispace0, one_of, space0,
         space1,
     },
-    combinator::{opt, recognize},
+    combinator::{opt, recognize, value},
     multi::{many0, many0_count, many1, separated_list0},
     sequence::{delimited, pair, preceded, terminated},
     IResult, Parser,
@@ -324,11 +324,18 @@ fn assign(s: &str) -> IResult<&str, Stmt> {
 #[derive(Debug)]
 enum Stmt {
     Assign((String, Expr)),
+    Comment,
+}
+
+fn comment(i: &str) -> IResult<&str, Stmt> {
+    value((), pair(char('#'), is_not("\n\r")))
+        .parse(i)
+        .map(|(r, s)| (r, Stmt::Comment))
 }
 
 /// stmt := assign
 fn stmt(s: &str) -> IResult<&str, Stmt> {
-    alt((assign,)).parse(s)
+    alt((assign, comment)).parse(s)
 }
 
 /// program := stmt*
@@ -391,6 +398,7 @@ impl Fig {
                     let val = expr.eval(&self.variables);
                     self.variables.insert(id.to_owned(), val);
                 }
+                Stmt::Comment => {}
             }
         }
         Ok(())

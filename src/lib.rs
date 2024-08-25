@@ -305,9 +305,16 @@ enum BinOp {
 }
 
 fn binop(s: &str) -> IResult<&str, BinOp> {
-    alt((tag("<<"), tag("|")))
-        .parse(s)
-        .map(|(r, s)| (r, BinOp::BitOr))
+    alt((tag("<<"), tag("|"))).parse(s).map(|(r, s)| {
+        (
+            r,
+            match s {
+                "<<" => BinOp::BitLeft,
+                "|" => BinOp::BitOr,
+                _ => unreachable!(),
+            },
+        )
+    })
 }
 
 /// binexpr := expr binop expr
@@ -497,5 +504,9 @@ mod tests {
 
         assert!(fig.variables["XK_d"].is_int());
         assert!(fig.variables["float"].is_float());
+
+        assert_eq!(*fig.variables["key"].as_int().unwrap(), 64 | 1);
+        assert_eq!(*fig.variables["x"].as_int().unwrap(), 1 << 3);
+        assert_eq!(*fig.variables["y"].as_int().unwrap(), !0);
     }
 }

@@ -353,6 +353,7 @@ pub enum FigError {
     NomIncomplete,
     NomError(nom::error::ErrorKind),
     TrailingInput(String),
+    Conversion,
 }
 
 impl std::fmt::Display for FigError {

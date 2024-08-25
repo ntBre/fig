@@ -144,6 +144,7 @@ enum Expr {
     Str(String),
     List(Vec<Expr>),
     Map(HashMap<String, Expr>),
+    Binop(Box<Expr>, BinOp, Box<Expr>),
 }
 
 impl Expr {
@@ -165,6 +166,20 @@ impl Expr {
                 m.into_iter().map(|(k, v)| (k, v.eval(env))).collect(),
             ),
             Expr::Int(i) => Value::Int(i),
+            Expr::Binop(e1, op, e2) => {
+                let v1 = e1.eval(env);
+                let v2 = e2.eval(env);
+                match op {
+                    BinOp::BitOr => {
+                        if !v1.is_int() || !v2.is_int() {
+                            panic!("invalid binary operator | for non-int");
+                        }
+                        Value::Int(
+                            *v1.as_int().unwrap() | *v2.as_int().unwrap(),
+                        )
+                    }
+                }
+            }
         }
     }
 
@@ -233,6 +248,28 @@ fn map(s: &str) -> IResult<&str, Expr> {
     })
 }
 
+#[derive(Debug)]
+enum BinOp {
+    BitOr,
+}
+
+fn binop(s: &str) -> IResult<&str, BinOp> {
+    tag("|").parse(s).map(|(r, s)| (r, BinOp::BitOr))
+}
+
+/// binexpr := expr binop expr
+fn binexpr(s: &str) -> IResult<&str, Expr> {
+    (
+        terminated(expr, multispace0),
+        terminated(binop, multispace0),
+        terminated(expr, multispace0),
+    )
+        .parse(s)
+        .map(|(r, (e1, op, e2))| {
+            (r, Expr::Binop(Box::new(e1), op, Box::new(e2)))
+        })
+}
+
 /// expr := float | int | bool | string | ident | list | map
 fn expr(s: &str) -> IResult<&str, Expr> {
     alt((number, bool, string, ident, list, map)).parse(s)
@@ -257,7 +294,7 @@ fn assign(s: &str) -> IResult<&str, Stmt> {
         space0,
         tag("="),
         space0,
-        expr,
+        alt((binexpr, expr)),
         space0,
         tag(";"),
     )
@@ -358,6 +395,13 @@ mod tests {
     use super::*;
 
     #[test]
+    fn binexprs() {
+        for b in ["MODKEY | ShiftMask"] {
+            binexpr(b).unwrap();
+        }
+    }
+
+    #[test]
     fn maps() {
         for m in ["{x: 1, y: 2, z: 3}"] {
             map(m).unwrap();
@@ -368,6 +412,13 @@ mod tests {
     fn lists() {
         for t in ["[1, 2, 3]", "[1,2,3]"] {
             list(t).unwrap();
+        }
+    }
+
+    #[test]
+    fn assigns() {
+        for a in ["let key = MODKEY | ShiftMask;"] {
+            assign(a).unwrap();
         }
     }
 

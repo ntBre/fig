@@ -11,3 +11,7 @@ let tags = ["1", "2", "3"];
 let map = {x: 1, y: 2};
 
 let struct = {x: 1, b: false, s: "str"};
+
+let MODKEY = 64;
+let ShiftMask = 1;
+let key = MODKEY | ShiftMask;

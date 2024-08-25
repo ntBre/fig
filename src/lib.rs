@@ -133,6 +133,14 @@ impl Value {
     pub fn is_float(&self) -> bool {
         matches!(self, Self::Float(..))
     }
+
+    pub fn try_into_int(self) -> Result<i64, Self> {
+        if let Self::Int(v) = self {
+            Ok(v)
+        } else {
+            Err(self)
+        }
+    }
 }
 
 #[derive(Debug)]

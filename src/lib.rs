@@ -125,6 +125,14 @@ impl Value {
     pub fn is_int(&self) -> bool {
         matches!(self, Self::Int(..))
     }
+
+    /// Returns `true` if the value is [`Float`].
+    ///
+    /// [`Float`]: Value::Float
+    #[must_use]
+    pub fn is_float(&self) -> bool {
+        matches!(self, Self::Float(..))
+    }
 }
 
 #[derive(Debug)]
@@ -372,5 +380,6 @@ mod tests {
         fig.eval(ast).unwrap();
 
         assert!(fig.variables["XK_d"].is_int());
+        assert!(fig.variables["float"].is_float());
     }
 }

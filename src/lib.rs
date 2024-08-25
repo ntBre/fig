@@ -152,6 +152,7 @@ enum Expr {
     Str(String),
     List(Vec<Expr>),
     Map(HashMap<String, Expr>),
+    Unop(UnOp, Box<Expr>),
     Binop(Box<Expr>, BinOp, Box<Expr>),
 }
 
@@ -193,6 +194,17 @@ impl Expr {
                         Value::Int(
                             *v1.as_int().unwrap() << *v2.as_int().unwrap(),
                         )
+                    }
+                }
+            }
+            Expr::Unop(op, e) => {
+                let v = e.eval(env);
+                match op {
+                    UnOp::BitNot => {
+                        if !v.is_int() {
+                            panic!("invalid unary operator ! for non-int");
+                        }
+                        Value::Int(!*v.as_int().unwrap())
                     }
                 }
             }
@@ -271,6 +283,22 @@ fn map(s: &str) -> IResult<&str, Expr> {
 }
 
 #[derive(Debug)]
+enum UnOp {
+    BitNot,
+}
+
+fn unop(s: &str) -> IResult<&str, UnOp> {
+    alt((tag("!"),)).parse(s).map(|(r, s)| (r, UnOp::BitNot))
+}
+
+/// unexpr := unop expr
+fn unexpr(s: &str) -> IResult<&str, Expr> {
+    (terminated(unop, multispace0), terminated(expr, multispace0))
+        .parse(s)
+        .map(|(r, (op, e2))| (r, Expr::Unop(op, Box::new(e2))))
+}
+
+#[derive(Debug)]
 enum BinOp {
     BitOr,
     BitLeft,
@@ -319,7 +347,7 @@ fn assign(s: &str) -> IResult<&str, Stmt> {
         space0,
         tag("="),
         space0,
-        alt((binexpr, expr)),
+        alt((unexpr, binexpr, expr)),
         space0,
         tag(";"),
     )

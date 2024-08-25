@@ -22,7 +22,8 @@ mod string;
 #[derive(Clone, Debug)]
 pub enum Value {
     Bool(bool),
-    Number(f32),
+    Int(i64),
+    Float(f32),
     Str(String),
     List(Vec<Value>),
     Map(HashMap<String, Value>),
@@ -37,8 +38,8 @@ impl Value {
         }
     }
 
-    pub fn as_number(&self) -> Option<&f32> {
-        if let Self::Number(v) = self {
+    pub fn as_float(&self) -> Option<&f32> {
+        if let Self::Float(v) = self {
             Some(v)
         } else {
             None
@@ -77,8 +78,8 @@ impl Value {
         }
     }
 
-    pub fn try_into_number(self) -> Result<f32, Self> {
-        if let Self::Number(v) = self {
+    pub fn try_into_float(self) -> Result<f32, Self> {
+        if let Self::Float(v) = self {
             Ok(v)
         } else {
             Err(self)
@@ -108,11 +109,28 @@ impl Value {
             Err(self)
         }
     }
+
+    pub fn as_int(&self) -> Option<&i64> {
+        if let Self::Int(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
+
+    /// Returns `true` if the value is [`Int`].
+    ///
+    /// [`Int`]: Value::Int
+    #[must_use]
+    pub fn is_int(&self) -> bool {
+        matches!(self, Self::Int(..))
+    }
 }
 
 #[derive(Debug)]
 enum Expr {
     Bool(bool),
+    Int(i64),
     Number(f32),
     Ident(String),
     Str(String),
@@ -130,7 +148,7 @@ impl Expr {
                 };
                 v.clone()
             }
-            Expr::Number(f) => Value::Number(f),
+            Expr::Number(f) => Value::Float(f),
             Expr::Str(s) => Value::Str(s),
             Expr::List(l) => {
                 Value::List(l.into_iter().map(|e| e.eval(env)).collect())
@@ -138,6 +156,7 @@ impl Expr {
             Expr::Map(m) => Value::Map(
                 m.into_iter().map(|(k, v)| (k, v.eval(env))).collect(),
             ),
+            Expr::Int(i) => Value::Int(i),
         }
     }
 
@@ -157,7 +176,15 @@ fn bool(s: &str) -> IResult<&str, Expr> {
 }
 
 fn number(s: &str) -> IResult<&str, Expr> {
-    nom::number::complete::float(s).map(|(s, f)| (s, Expr::Number(f)))
+    nom::number::complete::recognize_float(s).map(|(s, f)| {
+        (
+            s,
+            match f.parse::<i64>() {
+                Ok(i) => Expr::Int(i),
+                Err(_) => Expr::Number(f.parse().unwrap()),
+            },
+        )
+    })
 }
 
 fn string(s: &str) -> IResult<&str, Expr> {
@@ -343,5 +370,7 @@ mod tests {
 
         let mut fig = Fig::new();
         fig.eval(ast).unwrap();
+
+        assert!(fig.variables["XK_d"].is_int());
     }
 }

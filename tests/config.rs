@@ -8,8 +8,8 @@ struct Config {
 impl From<Fig> for Config {
     fn from(value: Fig) -> Self {
         Self {
-            x: *value.variables.get("x").unwrap().as_number().unwrap() as usize,
-            y: *value.variables.get("y").unwrap().as_number().unwrap() as usize,
+            x: *value.variables.get("x").unwrap().as_int().unwrap() as usize,
+            y: *value.variables.get("y").unwrap().as_int().unwrap() as usize,
         }
     }
 }

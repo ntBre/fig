@@ -46,8 +46,20 @@ try_from! {
     i64 => try_into_int,
     f32 => try_into_float,
     String => try_into_str,
-    Vec<Value> => try_into_list,
     HashMap<String, Value> => try_into_map,
+}
+
+impl<T: TryFrom<Value>> TryFrom<Value> for Vec<T> {
+    type Error = FigError;
+
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
+        value
+            .try_into_list()
+            .map_err(|_| FigError::Conversion)?
+            .into_iter()
+            .map(|v| T::try_from(v).map_err(|_| FigError::Conversion))
+            .collect()
+    }
 }
 
 impl Value {
@@ -512,6 +524,19 @@ mod tests {
     fn assigns() {
         for a in ["let key = MODKEY | ShiftMask;"] {
             assign(a).unwrap();
+        }
+    }
+
+    #[test]
+    fn vec_from_list() {
+        for list in [
+            //
+            Value::List(vec![
+                Value::Str("hello".into()),
+                Value::Str("world".into()),
+            ]),
+        ] {
+            let _: Vec<String> = list.try_into().unwrap();
         }
     }
 

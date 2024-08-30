@@ -29,6 +29,27 @@ pub enum Value {
     Map(HashMap<String, Value>),
 }
 
+macro_rules! try_from {
+    ($($out:ty => $method:ident$(,)*)*) => {
+        $(impl TryFrom<Value> for $out {
+            type Error = FigError;
+
+            fn try_from(value: Value) -> Result<Self, Self::Error> {
+                value.$method().map_err(|_| FigError::Conversion)
+            }
+        })*
+    }
+}
+
+try_from! {
+    bool => try_into_bool,
+    i64 => try_into_int,
+    f32 => try_into_float,
+    String => try_into_str,
+    Vec<Value> => try_into_list,
+    HashMap<String, Value> => try_into_map,
+}
+
 impl Value {
     pub fn as_bool(&self) -> Option<&bool> {
         if let Self::Bool(v) = self {

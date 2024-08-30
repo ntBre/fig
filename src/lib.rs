@@ -495,7 +495,14 @@ impl Fig {
     }
 }
 
+impl Default for Fig {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[cfg(test)]
+#[allow(clippy::single_element_loop)]
 mod tests {
     use super::*;
 

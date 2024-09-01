@@ -2,7 +2,10 @@
 
 #![allow(unused)]
 
-use std::{collections::HashMap, error::Error, fs::read_to_string, hash::Hash};
+use std::{
+    any::Any, collections::HashMap, error::Error, fs::read_to_string,
+    hash::Hash,
+};
 
 use nom::{
     branch::alt,
@@ -19,8 +22,9 @@ use nom::{
 
 mod string;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Value {
+    Nil,
     Bool(bool),
     Int(i64),
     Float(f32),
@@ -178,6 +182,7 @@ impl Value {
 
 #[derive(Debug)]
 enum Expr {
+    Nil,
     Bool(bool),
     Int(i64),
     Number(f32),
@@ -241,6 +246,7 @@ impl Expr {
                     }
                 }
             }
+            Expr::Nil => Value::Nil,
         }
     }
 
@@ -251,6 +257,10 @@ impl Expr {
             Err(self)
         }
     }
+}
+
+fn nil(s: &str) -> IResult<&str, Expr> {
+    tag("nil").parse(s).map(|(s, v)| (s, Expr::Nil))
 }
 
 fn bool(s: &str) -> IResult<&str, Expr> {
@@ -365,7 +375,7 @@ fn binexpr(s: &str) -> IResult<&str, Expr> {
 
 /// expr := float | int | bool | string | ident | list | map
 fn expr(s: &str) -> IResult<&str, Expr> {
-    alt((number, bool, string, ident, list, map)).parse(s)
+    alt((number, bool, nil, string, ident, list, map)).parse(s)
 }
 
 /// ident := [A-Za-z][A-Za-z_0-9]*
@@ -561,5 +571,7 @@ mod tests {
         assert_eq!(*fig.variables["key"].as_int().unwrap(), 64 | 1);
         assert_eq!(*fig.variables["x"].as_int().unwrap(), 1 << 3);
         assert_eq!(*fig.variables["y"].as_int().unwrap(), !0);
+
+        assert_eq!(fig.variables["nothing"], Value::Nil);
     }
 }

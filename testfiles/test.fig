@@ -30,3 +30,5 @@ let multiline_list = [
 
 # this is a comment
 let c = "another one"; # in-line comments work too, after semi-colon
+
+let nothing = nil;

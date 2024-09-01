@@ -178,6 +178,14 @@ impl Value {
             Err(self)
         }
     }
+
+    /// Returns `true` if the value is [`Nil`].
+    ///
+    /// [`Nil`]: Value::Nil
+    #[must_use]
+    pub fn is_nil(&self) -> bool {
+        matches!(self, Self::Nil)
+    }
 }
 
 #[derive(Debug)]
